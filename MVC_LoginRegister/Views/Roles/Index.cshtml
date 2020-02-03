@@ -1,0 +1,206 @@
+﻿
+
+<h2>Index</h2>
+<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#formModal" onclick="ClearScrean();">Create New</button>
+<br /><br />
+<table id="table" class="table table-striped table-bordered pt-lg-2" style="width:100%">
+    <thead>
+        <tr>
+
+            <th>Name</th>
+            <th>Action</th>
+
+        </tr>
+    </thead>
+</table>
+
+<!-- Modal-->
+<div class="modal fade" id="formModal" tabindex="-1" role="dialog" aria-labelledby="titleModal" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="titleModal">Add New Admin</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                @*<form method="post" action="@Url.Action("Create", "Dashboard")">*@
+                <div class="form-group">
+                    <label for="roleId">Id</label>
+                    <input type="text" class="form-control" id="roleId" name="roleId">
+                </div>
+                <div class="form-group">
+                    <label for="roleName">Role Name</label>
+                    <input type="text" class="form-control" id="roleName" name="roleName">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" id="Save" onclick="Validation();">Add</button>
+                <button type="button" class="btn btn-primary" id="Update" onclick="Validation(); ">Update</button>
+                <button type="button" class="btn btn-secondary" id="Close" data-dismiss="modal">Close</button>
+            </div>
+            @*</form>*@
+        </div>
+    </div>
+</div>
+
+<link href="//cdn.datatables.net/1.10.20/css/jquery.dataTables.min.css" rel="stylesheet" />
+@section Scripts{
+    
+    <script src="//cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@9"></script>
+    <script>
+        $(document).ready(function () {
+         table= $("#table").DataTable({
+                "ajax": {
+                    "url": "/Roles/GetDataRoles",
+                    "type": "GET",
+                    "dataType": "json"
+                },
+                "columns": [
+                    { "data": "Name" },
+                    {
+                        "render": function (data, type, row, meta) {
+                            return "<a class='btn btn-warning' onclick=GetById('" + row.Id + "');>Edit</a> | <a class='btn btn-danger' onclick=Delete('" + row.Id + "');>Delete</a>";
+                        }
+                    }
+
+
+                ]
+            });
+        });
+
+        function Delete(Id) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.value) {
+                    $.ajax({
+                        "url": "/Roles/Delete/",
+                        "dataType": "json",
+                        "data": {Id:Id}
+                    }).then((result) => {
+                        if (result.data > 0) {
+                            Swal.fire(
+                                'Success',
+                                'Your file has been deleted.',
+                                'success'
+                            );
+                            table.ajax.reload();
+                        } else {
+                            Swal.fire(
+                                'Failed',
+                                'Your file not deleted.',
+                                'failed'
+                            );
+                        }
+                    }) 
+                }
+            })
+        }
+        function Edit() {
+            var role = new Object();
+            role.Id = $("#roleId").val();
+            role.Name = $("#roleName").val();
+            $.ajax({
+                "url": "/Roles/Edit/",
+                "type": "GET",
+                "dataType": "json",
+                "data": role
+
+            }).then((result) => {
+                if (result.data > 0) {
+                    Swal.fire(
+                        'Success!',
+                        'Your file has been Update.',
+                        'success'
+                    )
+                    table.ajax.reload();
+                } else {
+                    Swal.fire(
+                        'Failed!',
+                        'Your file not Updated.',
+                        'failed'
+                    )
+                }
+                $("#formModal").modal("hide");
+            })
+
+        }
+        function GetById(Id) {
+            
+            $.ajax({
+                "url": "/Roles/Detail/",
+                "type": "GET",
+                "dataType": "json",
+                "data": {id:Id}
+            }).then((result) => {
+                debugger;
+                if (result.data[0] != null) {
+                    document.getElementById("roleId").disabled = true;
+                    $("#roleId").val(result.data[0].Id);
+                    $("#roleName").val(result.data[0].Name);
+                    $("#formModal").modal('show');
+                    $("#Update").show();
+                    $("#Save").hide();
+                }
+            });
+        }
+
+
+
+        function Save() {           
+            var role = new Object();
+            role.Name = $("#roleName").val();
+            $.ajax({
+                "url": "/Roles/Create",
+                "type": "POST",
+                "dataType": "json",
+                "data": role
+
+            }).then((result) => {
+                if (result.data > 0) {
+                    Swal.fire(
+                        'Success!',
+                        'Your file has been inserted.',
+                        'success'
+                    )
+                    table.ajax.reload();
+                } else {
+                    Swal.fire(
+                        'Failed!',
+                        'Your file not inserted.',
+                        'failed'
+                    )
+                }
+            })
+        }
+
+        function Validation() {
+
+            if ($("#roleName").val() == "" || $("#roleName").val == "") {
+                Swal.fire('Please Fill Name');
+            } else if ($("#roleId").val() == "" || $("#roleId").val == "") {
+                Save();
+            } else {
+                Edit($("#roleId").val());
+            }
+        }
+        function ClearScrean() {
+            document.getElementById("roleId").disabled = true;
+            $("#roleId").val('');
+            $("#roleName").val('');
+            $("#Update").hide();
+        }
+
+
+    </script>
+
+}
